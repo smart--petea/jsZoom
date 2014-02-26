@@ -42,7 +42,25 @@ jQuery.fn.zoom = function(settings) {
 	});
 
 	image.mousemove(function(e) {
-		var imgWidth = this.attr('width');
-		var imgHeight = this.attr('height');
+		var paperNode = this.paper.node,
+		    svgOffsetLeft = paperNode.offsetLeft,
+			svgOffsetTop = paperNode.offsetTop,
+			svgWidth = $(paperNode).width(),
+			svgHeight = $(paperNode).height(),
+			mouseX = e.x,
+			mouseY = e.y,
+			newX = (mouseX - svgOffsetLeft) * viewBoxWidth / svgWidth,
+			newY = (mouseY - svgOffsetTop) * viewBoxHeight / svgHeight;
+
+		image.transform([
+			"s",
+			imageScale,
+			",",
+			imageScale,
+			",",
+			newX,
+			",",
+			newY,
+		].join(""));
 	});
 }
