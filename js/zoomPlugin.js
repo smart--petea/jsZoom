@@ -3,6 +3,7 @@ jQuery.fn.zoom = function(settings) {
 	var $ = jQuery;
 	var defaultSetting = {
 		scale: 1.5, //scale factory
+		scaleMax: 4, //max scale level
 		width: "100px",
 		height: "100px",
 	};
@@ -27,6 +28,7 @@ jQuery.fn.zoom = function(settings) {
 		imageWidth = viewBoxWidth,
 		imageHeight = 0.9 * viewBoxHeight,
 		imageScale = settings.scale,
+		scaleMax = settings.scaleMax,
 		scaleX = 0.5 * imageWidth,
 		scaleY = 0.5 * imageHeight,
 		deltaScale = 0.1;
@@ -72,16 +74,7 @@ jQuery.fn.zoom = function(settings) {
 		minusSign ,
 		plusSign,
 		signLength = 0.7 * circleRadius,
-		progressWidth = viewBoxWidth - 4.4 * circleRadius,
-		signStrokeWidth	= 2,
-		progressHeight = signStrokeWidth * 2,
-		progress = paper.rect(2.2 * circleRadius, minusCircleY - progressHeight / 2, progressWidth, progressHeight, 1.1);
-
-	progress.attr({
-		fill: "none",
-		"stroke": "#aaaaaa",
-		"stroke-width": 0.4,
-	});
+		signStrokeWidth	= 2;
 
 	minusCircle.attr({
 		fill: circleColor,
@@ -146,7 +139,79 @@ jQuery.fn.zoom = function(settings) {
 		refreshImage();
 	});
 
+
+	var handlerAttr = {
+			x: 2.2 * circleRadius,
+			y: minusCircleY,
+			width: viewBoxWidth - 4.4 * circleRadius,
+			height: circleRadius * 1.8,
+		},
+		handler = new Handler(handlerAttr);
+
 	/* functions */
+	function Handler(attr) {
+		var x = this.x = attr.x,
+			y = this.y = attr.y,
+			height = this.height = attr.height,
+			width = this.width = attr.width,
+			progressDelta = 2,
+			progressX = x + progressDelta,
+			progressWidth = width - 2 * progressDelta,
+			progressHeight = 0.4 * height,
+			progressY = y - progressHeight / 2;
+
+		progress = paper.rect(progressX, progressY, progressWidth, progressHeight, 1.1),
+		progress.attr({
+			fill: "none",
+			"stroke": "#aaaaaa",
+			"stroke-width": 0.4,
+		});
+
+		/* define polzunoc elements */
+		var clipRect = paper.rect(x, y - height / 2, height, height, 2);
+		clipRect.toDefs();
+
+
+		var rect1 = paper.rect(x, y - height / 2, height , height / 2);
+		rect1.attr({
+			fill: "#B8AFA4",
+		});
+
+
+		var rect2 = paper.rect(x, y, height, height / 2);
+		rect2.attr({
+			fill: "#a59a8d",
+		});
+
+		var backGroup = paper.group(rect1, rect2);
+		backGroup.attr({
+			clipPath: clipRect,
+		});
+
+		var frontRect = clipRect.clone();
+		frontRect.insertAfter(rect2);
+		frontRect.attr({
+			fill: "transparent",
+			"stroke": "#d3d3d3",
+			"stroke-width": 0.3,
+			cursor: "pointer",
+		});
+
+		var polzunoc = this.polzunoc = paper.group(backGroup, frontRect);
+		polzunoc.transform("t10,0");
+
+		//functionality
+		frontRect.hover(function() {
+			frontRect.attr({
+				fill: "#dadada",
+			});
+		}, function() {
+			frontRect.attr({
+				fill: "transparent",
+			});
+		});
+	}
+
 	function refreshImage() {
 		image.transform([
 			"s",
