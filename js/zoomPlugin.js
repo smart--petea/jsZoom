@@ -17,7 +17,7 @@ jQuery.fn.zoom = function(settings) {
 		viewBoxWidth = 100,
 		viewBoxHeight = 100;
 
-	var paper = Snap(settings.width, settings.height);
+	paper = Snap(settings.width, settings.height);
 	this.append(paper.node);
 	paper.node.setAttribute("viewBox", [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight].join(" "));
 	paper.node.setAttribute("preserveAspectRatio", "none");
@@ -29,9 +29,12 @@ jQuery.fn.zoom = function(settings) {
 		imageHeight = 0.9 * viewBoxHeight,
 		imageScale = settings.scale,
 		scaleMax = settings.scaleMax,
+		scaleMin = 1, 
 		scaleX = 0.5 * imageWidth,
 		scaleY = 0.5 * imageHeight,
-		deltaScale = 0.1;
+		deltaScale = 0.1,
+		realWidth = $(paper.node).width(),
+		realHeight = $(paper.node).height();
 
 	image = paper.image(settings.src, imageX, imageY, imageWidth, imageHeight);
 	refreshImage();
@@ -145,6 +148,7 @@ jQuery.fn.zoom = function(settings) {
 			y: minusCircleY,
 			width: viewBoxWidth - 4.4 * circleRadius,
 			height: circleRadius * 1.8,
+			unitsCount: (scaleMax - scaleMin) / deltaScale,
 		},
 		handler = new Handler(handlerAttr);
 
@@ -152,13 +156,16 @@ jQuery.fn.zoom = function(settings) {
 	function Handler(attr) {
 		var x = this.x = attr.x,
 			y = this.y = attr.y,
+			unitsCount = this.unitsCount = attr.unitsCount, 
 			height = this.height = attr.height,
 			width = this.width = attr.width,
+			step = width / unitsCount,
 			progressDelta = 2,
 			progressX = x + progressDelta,
 			progressWidth = width - 2 * progressDelta,
 			progressHeight = 0.4 * height,
-			progressY = y - progressHeight / 2;
+			progressY = y - progressHeight / 2,
+			currentX = 0;
 
 		progress = paper.rect(progressX, progressY, progressWidth, progressHeight, 1.1),
 		progress.attr({
@@ -198,9 +205,17 @@ jQuery.fn.zoom = function(settings) {
 		});
 
 		var polzunoc = this.polzunoc = paper.group(backGroup, frontRect);
-		polzunoc.transform("t10,0");
 
 		//functionality
+		var	self = this;
+
+		polzunoc.drag(function(relX, relY, absX, absY, e) {
+			var transX = absX * viewBoxWidth/realWidth;
+			console.log('absX: ', transX);
+			console.log('progressX: ', progressX);
+			self.move((transX - progressX)/step);	
+		});
+
 		frontRect.hover(function() {
 			frontRect.attr({
 				fill: "#dadada",
@@ -210,6 +225,15 @@ jQuery.fn.zoom = function(settings) {
 				fill: "transparent",
 			});
 		});
+
+		this.move = function(x) {
+			console.log(x);
+			polzunoc.transform([
+				"t",
+				x * step,
+				",0",
+			].join(""));
+		}
 	}
 
 	function refreshImage() {
