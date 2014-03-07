@@ -130,17 +130,6 @@ jQuery.fn.zoom = function(settings) {
 		"pointer-events": "none",
 	});
 
-	/* controls events */
-	plusCircle.click(function() {
-		imageScale += deltaScale;
-		refreshImage();
-	});
-
-	minusCircle.click(function() {
-		imageScale -= deltaScale;
-		imageScale = imageScale < 1 ? 1 : imageScale;
-		refreshImage();
-	});
 
 
 	var handlerAttr = {
@@ -151,28 +140,54 @@ jQuery.fn.zoom = function(settings) {
 			unitsCount: (scaleMax - scaleMin) / deltaScale,
 		},
 		handler = new Handler(handlerAttr);
+		handler.setUnit(getUnit(imageScale));
+	h = handler;
 
+	/* assamble logic */
+	plusCircle.click(function() {
+		imageScale += deltaScale;
+		imageScale = imageScale > scaleMax ? scaleMax : imageScale;  
+		h.setUnit(getUnit(imageScale));
+		refreshImage();
+	});
+
+	minusCircle.click(function() {
+		imageScale -= deltaScale;
+		imageScale = imageScale < 1 ? 1 : imageScale;
+		h.setUnit(getUnit(imageScale));
+		refreshImage();
+	});
+
+	h.onChange(function(newUnit) {
+		imageScale = deltaScale * newUnit + 1;
+		refreshImage();
+	});
 	/* functions */
+	function getUnit(imageScale) {
+	 	return (imageScale - 1)/deltaScale;
+	}
+
 	function Handler(attr) {
 		var x = this.x = attr.x,
 			y = this.y = attr.y,
 			unitsCount = this.unitsCount = attr.unitsCount, 
 			height = this.height = attr.height,
 			width = this.width = attr.width,
-			step = width / unitsCount,
-			progressDelta = 2,
-			progressX = x + progressDelta,
-			progressWidth = width - 2 * progressDelta,
+			progressX = x + height / 2,
+			progressWidth = width - height,
 			progressHeight = 0.4 * height,
 			progressY = y - progressHeight / 2,
+			step = progressWidth / unitsCount,
 			currentX = 0;
-
 		progress = paper.rect(progressX, progressY, progressWidth, progressHeight, 1.1),
 		progress.attr({
 			fill: "none",
 			"stroke": "#aaaaaa",
 			"stroke-width": 0.4,
 		});
+
+		/* callbacks */
+		var callbacks = [];
 
 		/* define polzunoc elements */
 		var clipRect = paper.rect(x, y - height / 2, height, height, 2);
@@ -211,9 +226,7 @@ jQuery.fn.zoom = function(settings) {
 
 		polzunoc.drag(function(relX, relY, absX, absY, e) {
 			var transX = absX * viewBoxWidth/realWidth;
-			console.log('absX: ', transX);
-			console.log('progressX: ', progressX);
-			self.move((transX - progressX)/step);	
+			moveTo(Math.floor((transX - progressX)/step));	
 		});
 
 		frontRect.hover(function() {
@@ -226,13 +239,34 @@ jQuery.fn.zoom = function(settings) {
 			});
 		});
 
-		this.move = function(x) {
-			console.log(x);
+		function moveTo(x, silance) {
+			if(x < 0){
+				x = 0;
+			} else if (x > unitsCount) {
+			 x = unitsCount;
+			}
+			console.log("x: ", x);
+			console.log("unitsCount: ", unitsCount);
+
 			polzunoc.transform([
 				"t",
 				x * step,
 				",0",
 			].join(""));
+
+			!silance && emitChange(x);
+		}
+
+		function emitChange(newUnit) {
+			for(var i = 0; i < callbacks.length; i++) callbacks[i](newUnit);
+		}
+
+		this.onChange = function(callback) {
+			callbacks.push(callback);
+		}
+
+		this.setUnit = function(newUnit) {
+			moveTo(newUnit, true);
 		}
 	}
 
