@@ -181,7 +181,7 @@ jQuery.fn.zoom = function(settings) {
 			currentX = 0;
 		progress = paper.rect(progressX, progressY, progressWidth, progressHeight, 1.1),
 		progress.attr({
-			fill: "none",
+			fill: "transparent",
 			"stroke": "#aaaaaa",
 			"stroke-width": 0.4,
 		});
@@ -224,6 +224,11 @@ jQuery.fn.zoom = function(settings) {
 		//functionality
 		var	self = this;
 
+		progress.click(function(e) {
+			var transX = e.x * viewBoxWidth/realWidth;
+			moveTo(Math.floor((transX - progressX)/step));	
+		});
+
 		polzunoc.drag(function(relX, relY, absX, absY, e) {
 			var transX = absX * viewBoxWidth/realWidth;
 			moveTo(Math.floor((transX - progressX)/step));	
@@ -245,8 +250,6 @@ jQuery.fn.zoom = function(settings) {
 			} else if (x > unitsCount) {
 			 x = unitsCount;
 			}
-			console.log("x: ", x);
-			console.log("unitsCount: ", unitsCount);
 
 			polzunoc.transform([
 				"t",
